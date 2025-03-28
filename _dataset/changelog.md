@@ -76,6 +76,8 @@ ipbes-sch:global19-2.1.2. ;
 ipbes:SubChapter ipbes-sch:global19-4.2.4.3.,
 Expected subject but got ; at line 45502.
 
+# to do
+Fix references to files on local machine e.g. <file:///C:/Users/user/Desktop/IPBES/Value_Assessment_Impl/ValueAssessment_SPM_analysis/none> in VA
 
 ***********************************************************************
 Run tests 
