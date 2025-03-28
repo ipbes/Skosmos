@@ -64,8 +64,12 @@ Expected punctuation to follow "http://data.ipbes.net/sch/global19-3.3.2.2" at l
 Expected punctuation to follow "http://data.ipbes.net/sch/global19-2.3.5.2" at line 45000.
 
 # remove trailing fullstops
-(ipbes-sch:[^\s;]+)(?<=\d)\.(?=[\s;,])
+(ipbes-sch:[^\s;]+)(?<=\d)\.([\s;])
 $1$2
+(ipbes-sch:[^\s;]+)(?<=\d)\.(?=[\s;,])
+$1
+(ipbes-person:[^\s;]+)(?<=\w)\.(?=[\s;])
+$1
 
 example
 ipbes-sch:global19-2.1.2. ;
