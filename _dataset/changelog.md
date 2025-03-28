@@ -37,8 +37,10 @@ ipbes-person:$1
 <http://ontology\.ipbes\.net/report/ref/([^/]+)/items/([^>]+)>
 <http://data.ipbes.net/refm/$1/items/$2>
 
+********** search and replace manually  ***********
 (ipbes:identifier\s*")([^"]+)(")
-$1$2"@en
+",
+        "
 
 (skos:prefLabel\s*")([^"]+)(")
 $1$2"@en
@@ -78,6 +80,7 @@ Expected subject but got ; at line 45502.
 
 # to do
 Fix references to files on local machine e.g. <file:///C:/Users/user/Desktop/IPBES/Value_Assessment_Impl/ValueAssessment_SPM_analysis/none> in VA
+Check delimiters in ipbes:identifier 
 
 ***********************************************************************
 Run tests 
