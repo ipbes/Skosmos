@@ -72,8 +72,8 @@ $1
 $1
 
 example
-ipbes-sch:global19-2.1.2. ;
-ipbes:SubChapter ipbes-sch:global19-4.2.4.3.,
+ipbes-sch:global19-2.1.2 ;
+ipbes:SubChapter ipbes-sch:global19-4.2.4.3,
 Expected subject but got ; at line 45502.
 
 # to do
