@@ -88,3 +88,5 @@ Run tests
 https://www.w3.org/2015/03/ShExValidata/
 https://felixlohmeier.github.io/turtle-web-editor/
 
+# For Zotero
+https://www.zotero.org/groups/ is equivalent to http://data.ipbes.net/refm/
