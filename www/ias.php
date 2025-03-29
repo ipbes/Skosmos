@@ -2,14 +2,14 @@
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-// SPARQL endpoint de Fuseki
+// SPARQL endpoint for Fuseki
 $fuseki_endpoint = 'http://localhost:3030/ias/query';
 
-// Obtener parámetros
+// Get parameters
 $report = $_GET['report'] ?? null;
 $subchapter = $_GET['subchapter'] ?? null;
 
-// Ejecutar consulta SPARQL
+// Run SPARQL query
 function sparql_query($endpoint, $query) {
     $url = $endpoint . '?query=' . urlencode($query);
     $response = file_get_contents($url, false, stream_context_create([
