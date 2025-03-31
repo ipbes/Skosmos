@@ -3,7 +3,7 @@ ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
 // SPARQL endpoint configuration
-$fuseki_endpoint = 'http://localhost:3030/report/query';
+$fuseki_endpoint = 'http://localhost:3030/va/query';
 
 // Get URL parameters
 $report = $_GET['report'] ?? null;

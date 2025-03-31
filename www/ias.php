@@ -7,6 +7,7 @@ $fuseki_endpoint = 'http://localhost:3030/ias/query';
 
 // Get URL parameters
 $report = $_GET['report'] ?? null;
+$chapter = $_GET['chapter'] ?? null;
 $subchapter = $_GET['subchapter'] ?? null;
 
 /**
@@ -146,7 +147,7 @@ function showReferencePersons($endpoint, $refUri) {
 <body>
 <h1>IPBES Report Navigator</h1>
 
-<?php if (!$report && !$subchapter): ?>
+<?php if (!$report && !$chapter): ?>
     <!-- List all reports.-->
      <?php
     $query = "
@@ -172,8 +173,8 @@ function showReferencePersons($endpoint, $refUri) {
         <?php endforeach; ?>
     </ul>
 
-    <?php elseif ($report && !$subchapter): ?>
-    <!-- Show report details and list subchapters -->
+    <?php elseif ($report && !$chapter): ?>
+    <!-- Show report details and list chapters -->
     <h2>Report Details</h2>
     <?php showResourceDetails($fuseki_endpoint, $report); ?>
 
@@ -182,11 +183,11 @@ function showReferencePersons($endpoint, $refUri) {
         PREFIX ipbes: <http://ontology.ipbes.net/>
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
         
-        SELECT ?subchapter ?label WHERE {
-        ?subchapter a ipbes:SubChapter ;
+        SELECT ?chapter ?label WHERE {
+        ?chapter a ipbes:Chapter ;
         ipbes:hasReport <{$report}> . 
         OPTIONAL {
-            ?subchapter rdfs:label ?label
+            ?chapter rdfs:label ?label
             }
         } ORDER BY ?label
     ";
@@ -195,19 +196,19 @@ function showReferencePersons($endpoint, $refUri) {
     <h3>Subchapters</h3>
     <ul>
         <?php foreach ($results['results']['bindings'] as $row): ?>
-            <?php $label = $row['label']['value'] ?? basename($row['subchapter']['value']); ?>
+            <?php $label = $row['label']['value'] ?? basename($row['chapter']['value']); ?>
             <?php printLink($label, [
                 'report' => $report,
-                'subchapter' => $row['subchapter']['value']
+                'chapter' => $row['chapter']['value']
                 ]); ?>
             <?php endforeach; ?>
     </ul>
     <a href="?" class="back-link">← Back to All Reports</a>
 
- <?php elseif ($subchapter): ?>
+ <?php elseif ($chapter): ?>
 <!-- Show subchapter details and references -->
-    <h2>Subchapter Details</h2>
-    <?php showResourceDetails($fuseki_endpoint, $subchapter); ?>
+    <h2>Chapter Details</h2>
+    <?php showResourceDetails($fuseki_endpoint, $chapter); ?>
 
     <?php
     $query = "
@@ -216,7 +217,7 @@ function showReferencePersons($endpoint, $refUri) {
 
         SELECT ?ref ?doi ?label WHERE {
             ?ref a ipbes:Reference ;
-            ipbes:hasReport <{$subchapter}> .
+            ipbes:hasReport <{$chapter}> .
             OPTIONAL {
                 ?ref ipbes:hasDoi ?doi .
                 ?ref rdfs:label ?label
@@ -240,7 +241,7 @@ function showReferencePersons($endpoint, $refUri) {
             <?php endforeach; ?>
             </ul>
 
-            <a href="?report=<?= urlencode($report) ?>" class="back-link">← Back to Subchapters</a>
+            <a href="?report=<?= urlencode($report) ?>" class="back-link">← Back to Chapters</a>
             <?php endif; ?>
 </body>
 </html>
