@@ -206,7 +206,7 @@ function showReferencePersons($endpoint, $refUri) {
     <a href="?" class="back-link">← Back to All Reports</a>
 
  <?php elseif ($chapter): ?>
-<!-- Show subchapter details and references -->
+<!-- Show Chapter details and references -->
     <h2>Chapter Details</h2>
     <?php showResourceDetails($fuseki_endpoint, $chapter); ?>
 
