@@ -13,12 +13,22 @@ $query = <<<SPARQL
 PREFIX ipbes: <http://ontology.ipbes.net/>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-SELECT ?gap ?label ?description WHERE {
+SELECT ?gap ?subchapter ?chapter ?description ?report WHERE {
     ?gap a ipbes:KnowledgeGap .
-    OPTIONAL { ?gap rdfs:label ?label }
-    OPTIONAL { ?gap ipbes:hasDescription ?description }
+    OPTIONAL {
+        ?gap ipbes:SubChapter ?subchapter .
+        OPTIONAL {
+            ?subchapter ipbes:Chapter ?chapter .
+        }
+    }
+    OPTIONAL {
+        ?gap ipbes:hasDescription ?description .
+    }
+    OPTIONAL {
+        ?gap ipbes:hasReport ?report .
+    }
 }
-ORDER BY ?label
+ORDER BY ?gap
 SPARQL;
 
 // Function to try multiple endpoints
@@ -125,18 +135,30 @@ $result = try_query($endpoints, $query);
                     <tr>
                         <th>Knowledge Gap</th>
                         <th>Description</th>
+                        <th>Sub-chapter</th>
+                        <th>Chapter</th>
+                        <th>Report</th>
                     </tr>
                 </thead>
                 <tbody>
                     <?php foreach ($result['data']['results']['bindings'] as $row): ?>
                         <tr>
                             <td>
-                                <strong><?= htmlspecialchars($row['label']['value'] ?? 'Untitled Knowledge Gap') ?></strong><br>
                                 <small><?= htmlspecialchars($row['gap']['value']) ?></small>
                             </td>
                             <td class="description">
                                 <?= htmlspecialchars($row['description']['value'] ?? 'No description available') ?>
                             </td>
+                            <td class="subchapter">
+                                <?= htmlspecialchars($row['subchapter']['value'] ?? 'No subchapter available') ?>
+                            </td>
+                            <td class="chapter">
+                                <?= htmlspecialchars($row['chapter']['value'] ?? 'No chapter available') ?>
+                            </td>
+                            <td class="report">
+                                <?= htmlspecialchars($row['report']['value'] ?? 'No report available') ?>
+                            </td>
+                            
                         </tr>
                     <?php endforeach; ?>
                 </tbody>
