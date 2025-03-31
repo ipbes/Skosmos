@@ -7,7 +7,7 @@ $fuseki_endpoint = 'http://localhost:3030/ias/query';
 
 // Get URL parameters
 $report = $_GET['report'] ?? null;
-$chapter = $_GET['chapter'] ?? null;
+$subchapter = $_GET['subchapter'] ?? null;
 
 /**
  * Execute SPARQL query against endpoint
@@ -170,8 +170,8 @@ function showReferencePersons($endpoint, $refUri) {
         <?php endforeach; ?>
     </ul>
 
-    <?php elseif ($report && !$chapter): ?>
-    <!-- Show report details and list chapters -->
+    <?php elseif ($report && !$subchapter): ?>
+    <!-- Show report details and list subchapters -->
     <h2>Report Details</h2>
     <?php showResourceDetails($fuseki_endpoint, $report); ?>
 
@@ -180,11 +180,11 @@ function showReferencePersons($endpoint, $refUri) {
         PREFIX ipbes: <http://ontology.ipbes.net/>
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
         
-        SELECT ?chapter ?label WHERE {
-        ?chapter a ipbes:Chapter ;
+        SELECT ?subchapter ?label WHERE {
+        ?subchapter a ipbes:SubChapter ;
         ipbes:hasReport <{$report}> . 
         OPTIONAL {
-            ?chapter rdfs:label ?label
+            ?subchapter rdfs:label ?label
             }
         } ORDER BY ?label
     ";
