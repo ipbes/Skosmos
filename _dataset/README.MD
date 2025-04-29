@@ -3,13 +3,6 @@ https://github.com/ipbes/Skosmos/tree/main
 original ttl files for ontology downloaded from https://github.com/IPBES-Data/IPBES_Ontology
 original ttl files for LOD downloaded from https://github.com/IPBES-Data/IPBES_LOD
 
-# To do
-Check if multiple identifiers are fine
-
-# Run tests 
-https://www.w3.org/2015/03/ShExValidata/
-https://felixlohmeier.github.io/turtle-web-editor/
-
 # Rewrite datasets 
 ## Simple find and replace
 ### Change foaf to skos
@@ -183,6 +176,11 @@ Review/Test TTL files
 
 Further development and theming
 Architecture to publish web page
+Check if multiple identifiers are fine
+
+# Run tests 
+https://www.w3.org/2015/03/ShExValidata/
+https://felixlohmeier.github.io/turtle-web-editor/
 
 # Credits
 Juan Antonio Pastor Sánchez
