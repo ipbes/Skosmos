@@ -11,15 +11,22 @@ This project is aimed at making reports that have been converted to Linked Open 
 
 The project has 2 functions
 1. Vocabulary: The project allows navigating and visualising the vocabularies used in the production of IPBES assessment reports and other IPBES products using Simple Knowledge Organization System (SKOS). SKOS is a W3C recommendation designed for representation of thesauri, classification schemes, taxonomies, subject-heading systems, or any other type of structured controlled vocabulary. 
-2. Representation of IPBES assessment reports in Linked Open Data: The project applies the SKOS vocabularies to represent IPBES assessment reports that have been converted in linked open data with their structure of chapters, references, authors, knowledge gaps and background messages and other features described in the IPBES ontology.
+2. Representation of IPBES assessment reports in Linked Open Data: The project applies the SKOS vocabularies to represent IPBES assessment reports that have been converted in linked open data with their structure of chapters, references, authors, knowledge gaps and background messages and other features described in the IPBES ontology.The following assessments have been added:
+
+(GA1) http://ontology.ipbes.net/graph/ga1: Global assessment report of the Intergovernmental Science-Policy Platform on Biodiversity and Ecosystem Services. DOI: https://doi.org/10.5281/zenodo.7430682
+(IAS) http://ontology.ipbes.net/graph/ias: Thematic Assessment Report on Invasive Alien Species and their Control of the Intergovernmental Science-Policy Platform on Biodiversity and Ecosystem Services. DOI: https://doi.org/10.5281/zenodo.7430682
+(VAL) http://ontology.ipbes.net/graph/va: Methodological Assessment Report on the Diverse Values and Valuation of Nature of the Intergovernmental Science-Policy Platform on Biodiversity and Ecosystem Services. DOI: https://doi.org/10.5281/zenodo.6522522
+(SUA) http://ontology.ipbes.net/graph/sua: Thematic Assessment Report on the Sustainable Use of Wild Species of the Intergovernmental Science-Policy Platform on Biodiversity and Ecosystem Services. DOI: https://doi.org/10.5281/zenodo.6448567
 
 
 # Installation
 Instructions on how to set up a similar server can be found on [Set up instructions](https://github.com/NatLibFi/Skosmos/wiki/InstallTutorial). You will need to Ccnfigure cache to improve performance. Instructions on how to improve cache can be found on the same set up page.
 
 # Loading data using the Fuseki web interface
-For Vocabularies: Go to the Fuseki web interface (http://localhost:3030/#/), click on "datasets" tab at the top and click on "add data", enter "Dataset graph name" as http://ontology.ipbes.net/ipbes/, click on "select files", browse your computer to upload .ttl file "sample.ttl" and click on "upload now".
-For Linked Open Data: Go to the Fuseki web interface (http://localhost:3030/#/), click on "manage" tab at the top and click on "new dataset", enter "Dataset name" as 3 letter assessment abbreviation in small letters e.g. "ias", check Dataset type as "Persistent (TDB2) – dataset will persist across Fuseki restarts", click "create dataset". Once dataset is created you can upload .ttl file by clicking on "add data" then browse your computer to upload .ttl file and click on "upload now".
+Create dataset: Go to the Fuseki web interface (http://localhost:3030/#/), click on "manage" tab at the top and click on "new dataset", enter "Dataset name" e.g. report, check Dataset type as "Persistent (TDB2) – dataset will persist across Fuseki restarts", click "create dataset". Once dataset is created you can upload .ttl file by clicking on "add data" then browse your computer to upload .ttl file and click on "upload now".
+
+Upload data to dataset: Go to the Fuseki web interface (http://localhost:3030/#/), click on "datasets" tab at the top and click on "add data", enter "Dataset graph name" as http://ontology.ipbes.net/graph/[3 letter assessment abbreviation in small letters e.g. ias], click on "select files", browse your computer to upload .ttl file "sample.ttl" and click on "upload now".
+
 
 # Deleting data using the Fuseki web interface
 Go to the Fuseki web interface (http://localhost:3030/#/), click on "manage" tab at the top and select "remove". You may need to restart apache for changes to be applied
