@@ -13,7 +13,7 @@
     }
 
     header {
-      background-color: #003366;
+      background-color: #009390;
       color: white;
       padding: 1em 2em;
       display: flex;
@@ -35,7 +35,7 @@
     }
 
     h1 {
-      color: #003366;
+      color: #515648;
     }
 
     label, select, input, textarea {
@@ -66,7 +66,7 @@
     }
 
     button:hover {
-      background-color: #004c82;
+      background-color: #009390;
     }
 
     #results {
@@ -83,7 +83,7 @@
     }
 
     footer {
-      background-color: #003366;
+      background-color: #009390;
       color: white;
       padding: 1em 2em;
       text-align: center;
@@ -94,7 +94,7 @@
 <body>
 
   <header>
-    <div class="logo">[Logo Placeholder]</div>
+    <div class="logo">IPBES</div>
     <nav><!-- Optional: future navigation links --></nav>
   </header>
 
@@ -103,22 +103,25 @@
     <p>
       Use this interface to run custom SPARQL queries against selected datasets.
       Choose the dataset (graph), format of the results, and view or download your results. 
-      This tool is intended for researchers, developers, and data analysts working with IPLC knowledge systems.
+      This tool is intended for researchers, developers, and data analysts working with IPBES knowledge systems.
+      To use the tool: input a query or edit the sample query, set any options and press "Run Query"
+      
+      You can find the IPBES Ontology here: https://ontology.ipbes.net/report/report.ttl.
     </p>
 
     <label for="query">SPARQL Query:</label>
     <textarea id="query">
-PREFIX ipbes: &lt;http://ontology.ipbes.net/report&gt;
-SELECT ?g ?gap ?subchapter ?chapter ?description
-WHERE {
-  GRAPH ?g {
-    ?gap a ipbes:KnowledgeGap .
-    OPTIONAL { ?gap ipbes:SubChapter ?subchapter }
-    OPTIONAL { ?gap ipbes:hasDescription ?description }
-  }
-}
-ORDER BY ?gap
-</textarea>
+        PREFIX ipbes: &lt;http://ontology.ipbes.net/report&gt;
+        SELECT ?g ?gap ?subchapter ?chapter ?description
+        WHERE {
+        GRAPH ?g {
+            ?gap a ipbes:KnowledgeGap .
+            OPTIONAL { ?gap ipbes:SubChapter ?subchapter }
+            OPTIONAL { ?gap ipbes:hasDescription ?description }
+        }
+        }
+        ORDER BY ?gap
+    </textarea>
 
     <label for="graphUri">Select Target Graph:</label>
     <select id="graphUri">
@@ -154,7 +157,7 @@ ORDER BY ?gap
   </main>
 
   <footer>
-    <p>© 2025 Your Organization Name. All rights reserved. | <a href="#" style="color: #b3d1ff;">Terms of Use</a> | <a href="mailto:contact@example.org" style="color: #b3d1ff;">Contact Us</a></p>
+    <p>© 2025 IPBES secretariat. All rights reserved. | <a href="https://www.ipbes.net/terms-of-use" style="color: #b3d1ff;">Terms of Use</a> | <a href="mailto:mea-ipbes-registration@un.org" style="color: #b3d1ff;">Contact Us</a></p>
   </footer>
 
   <script>
@@ -166,36 +169,61 @@ ORDER BY ?gap
     });
 
     async function runQuery() {
-      const query = document.getElementById("query").value;
-      const graphUri = document.getElementById("graphUri").value;
-      const format = document.getElementById("format").value;
-      const xmlType = document.getElementById("xmlType").value;
-      const resultsBox = document.getElementById("results");
-      
-      const endpoint = "http://localhost:3030/report/query";
-      const params = new URLSearchParams();
-      params.append("query", query);
-      if (graphUri) {
-        params.append("default-graph-uri", graphUri);
-      }
+  const query = document.getElementById("query").value;
+  const graphUri = document.getElementById("graphUri").value;
+  const format = document.getElementById("format").value;
+  const xmlType = document.getElementById("xmlType").value;
+  const resultsBox = document.getElementById("results");
 
-      const headers = {
-        "Accept": format
-      };
+  // Clear previous results
+  resultsBox.textContent = "";
 
-      try {
-        const res = await fetch(`${endpoint}?${params.toString()}`, { headers });
-        const text = await res.text();
+  // Check for harmful operations
+  const harmfulPatterns = [
+    /\bDROP\b/i,
+    /\bDELETE\b/i,
+    /\bINSERT\b/i,
+    /\bLOAD\b/i,
+    /\bCLEAR\b/i,
+    /\bCREATE\b/i,
+    /\bCOPY\b/i,
+    /\bMOVE\b/i
+  ];
 
-        if (format === "application/sparql-results+xml" && xmlType) {
-          resultsBox.textContent = `[${xmlType} output]\n\n` + text;
-        } else {
-          resultsBox.textContent = text;
-        }
-      } catch (err) {
-        resultsBox.textContent = "Error: " + err.message;
-      }
+  if (harmfulPatterns.some(pattern => pattern.test(query))) {
+    resultsBox.textContent = "🚫 Error: Destructive operations like DROP, DELETE, or INSERT are not allowed.";
+    return;
+  }
+
+  const endpoint = "http://localhost:3030/report/query";
+  const params = new URLSearchParams();
+  params.append("query", query);
+  if (graphUri) {
+    params.append("default-graph-uri", graphUri);
+  }
+
+  const headers = {
+    "Accept": format
+  };
+
+  try {
+    const res = await fetch(`${endpoint}?${params.toString()}`, { headers });
+    const text = await res.text();
+
+    if (!res.ok) {
+      throw new Error(`Server returned status ${res.status}`);
     }
+
+    if (format === "application/sparql-results+xml" && xmlType) {
+      resultsBox.textContent = `[${xmlType} output]\n\n` + text;
+    } else {
+      resultsBox.textContent = text;
+    }
+  } catch (err) {
+    resultsBox.textContent = "❌ Query failed: " + err.message;
+  }
+}
+
   </script>
 
 </body>
