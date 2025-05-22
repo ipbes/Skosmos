@@ -83,9 +83,7 @@ function showReferencePersons($endpoint, $refUri) {
             GRAPH <http://ontology.ipbes.net/graph/ias> { 
 
                 <$refUri> ipbes:hasPerson ?person . 
-                OPTIONAL { 
-                    ?person foaf:name|rdfs:label ?label
-                }
+                OPTIONAL { ?person foaf:name|rdfs:label ?label }
             }
         }
     ";
@@ -170,10 +168,11 @@ if (!$report && !$chapter && !$subchapter): ?>
         SELECT DISTINCT ?g ?report ?label 
         WHERE {
             GRAPH <http://ontology.ipbes.net/graph/ias> { 
-            ?report a ipbes:Report .
-            OPTIONAL { ?report rdfs:label|skos:prefLabel ?label } 
+                ?report a ipbes:Report .
+                OPTIONAL { ?report rdfs:label|skos:prefLabel ?label } 
             }
-            } ORDER BY ?label
+        }
+        ORDER BY ?label
         ";
     $results = sparql_query($fuseki_endpoint, $query);
     ?>
@@ -203,7 +202,8 @@ if (!$report && !$chapter && !$subchapter): ?>
                 ipbes:Report <{$report}> . 
                 OPTIONAL { ?chapter rdfs:label ?label }
             }
-        } ORDER BY ?label         
+        } 
+        ORDER BY ?label         
     ";
     $results = sparql_query($fuseki_endpoint, $query);
     ?>
