@@ -4,16 +4,16 @@ error_reporting(E_ALL);
 
 // Try multiple possible endpoints
 $endpoints = [
-    'http://localhost:3030/report/query',
-    'http://localhost:3030/va/query',
-    'http://localhost:3030/ds/query'
+    'http://localhost:3030/report/query'
 ];
 
 $query = <<<SPARQL
-PREFIX ipbes: <http://ontology.ipbes.net/>
+PREFIX ipbes: <http://ontology.ipbes.net/report>
 PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-SELECT ?gap ?subchapter ?chapter ?description ?report WHERE {
+SELECT ?g ?gap ?subchapter ?chapter ?description ?report 
+WHERE {
+GRAPH ?g { 
     ?gap a ipbes:KnowledgeGap .
     OPTIONAL {
         ?gap ipbes:SubChapter ?subchapter .
@@ -21,12 +21,9 @@ SELECT ?gap ?subchapter ?chapter ?description ?report WHERE {
             ?subchapter ipbes:Chapter ?chapter .
         }
     }
-    OPTIONAL {
-        ?gap ipbes:hasDescription ?description .
-    }
-    OPTIONAL {
-        ?gap ipbes:hasReport ?report .
-    }
+    OPTIONAL { ?gap ipbes:hasDescription ?description .}
+    OPTIONAL { ?gap ipbes:Report ?report .  }
+}
 }
 ORDER BY ?gap
 SPARQL;

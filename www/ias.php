@@ -207,6 +207,7 @@ if (!$report && !$chapter && !$subchapter): ?>
     ";
     $results = sparql_query($fuseki_endpoint, $query);
     ?>
+
     <h3>Chapters</h3>
     <ul>
         <?php foreach ($results['results']['bindings'] as $row): ?>
@@ -217,6 +218,7 @@ if (!$report && !$chapter && !$subchapter): ?>
                 ]); ?>
             <?php endforeach; ?>
     </ul>
+    
     <a href="?" class="back-link">← Back to All Reports</a>
 
  <?php elseif ($report && $chapter && !$subchapter): ?>
