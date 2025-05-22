@@ -6,9 +6,9 @@ error_reporting(E_ALL);
 $fuseki_endpoint = 'http://localhost:3030/report/query';
 
 // Get URL parameters
-$report = $_GET['report'] ?? null;
-$chapter = $_GET['chapter'] ?? null;
-$subchapter = $_GET['subchapter'] ?? null;
+$report = isset($_GET['report']) ? urldecode($_GET['report']) : null;
+$chapter = isset($_GET['chapter']) ? urldecode($_GET['chapter']) : null;
+$subchapter = isset($_GET['subchapter']) ? urldecode($_GET['subchapter']) : null;
 
 /**
  * Execute SPARQL query against endpoint
@@ -41,6 +41,7 @@ function printLink($label, $params) {
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
         PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
         PREFIX dcterms: <http://purl.org/dc/terms/>
+
             SELECT ?g ?p ?o ?label 
                 WHERE { 
                     GRAPH <http://ontology.ipbes.net/graph/ga1> { 
@@ -74,7 +75,9 @@ function printLink($label, $params) {
 function showReferencePersons($endpoint, $refUri) {
     $query = "
     PREFIX ipbes: <http://ontology.ipbes.net/report>
+    PREFIX foaf: <http://xmlns.com/foaf/0.1/>
     PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
         SELECT DISTINCT ?g ?person ?label 
             WHERE { 
                 GRAPH <http://ontology.ipbes.net/graph/ga1> { 
@@ -83,7 +86,9 @@ function showReferencePersons($endpoint, $refUri) {
                 }
             }
     ";
+
     $results = sparql_query($endpoint, $query);
+
     if (!empty($results['results']['bindings'])) {
         echo "<ul>";
         foreach ($results['results']['bindings'] as $row) {
@@ -149,6 +154,7 @@ function showReferencePersons($endpoint, $refUri) {
 </head>
 <body>
 <h1>IPBES Report Navigator</h1>
+
 <?php 
 if (!$report && !$chapter && !$subchapter): ?>
     <!-- List all reports. You can remove |skos:prefLabel in optional-->
@@ -157,6 +163,7 @@ if (!$report && !$chapter && !$subchapter): ?>
     PREFIX ipbes: <http://ontology.ipbes.net/report>
     PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
     PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
     SELECT DISTINCT ?g ?report ?label 
         WHERE { 
             GRAPH <http://ontology.ipbes.net/graph/ga1> { 
@@ -168,6 +175,7 @@ if (!$report && !$chapter && !$subchapter): ?>
         ";
     $results = sparql_query($fuseki_endpoint, $query);
     ?>
+    
     <h2>Available Reports</h2>
 <ul>
         <?php foreach ($results['results']['bindings'] as $row): ?>
@@ -175,6 +183,7 @@ if (!$report && !$chapter && !$subchapter): ?>
              <?php printLink($label, ['report' => $row['report']['value']]); ?>
         <?php endforeach; ?>
     </ul>
+
 <?php elseif ($report && !$chapter && !$subchapter): ?>
     <!-- Show report details and list chapters -->
     <h2>Report Details</h2>
@@ -184,15 +193,17 @@ if (!$report && !$chapter && !$subchapter): ?>
         $query = "
         PREFIX ipbes: <http://ontology.ipbes.net/report>
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
         SELECT ?g ?chapter ?label 
         WHERE { 
             GRAPH <http://ontology.ipbes.net/graph/ga1> { 
                 ?chapter a ipbes:Chapter ; 
                 ipbes:Report <{$report}> . 
-                OPTIONAL { ?chapter rdfs:label ?label } 
+                OPTIONAL { ?chapter rdfs:label|skos:prefLabel ?label } 
             }
         } 
-        ORDER BY ?label
+        ORDER BY ?chapter
         ";
     $results = sparql_query($fuseki_endpoint, $query);
      ?>
@@ -214,18 +225,20 @@ if (!$report && !$chapter && !$subchapter): ?>
     <?php showResourceDetails($fuseki_endpoint, $chapter); ?>
 
     <?php
+    echo "<pre>Chapter URI: $chapter</pre>"; 
     $query = "
         PREFIX ipbes: <http://ontology.ipbes.net/report>
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 
         SELECT ?g ?subchapter ?label 
             WHERE { 
                 GRAPH <http://ontology.ipbes.net/graph/ga1> {
                     ?subchapter a ipbes:SubChapter ; 
                     ipbes:Chapter <{$chapter}> . 
-                    OPTIONAL { ?subchapter rdfs:label ?label } 
+                    OPTIONAL { ?subchapter rdfs:label|skos:prefLabel ?label } 
                 }
-            } ORDER BY ?label
+            } ORDER BY ?subchapter
         ";
         $results = sparql_query($fuseki_endpoint, $query);
         ?>

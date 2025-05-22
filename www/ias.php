@@ -80,8 +80,7 @@ function showReferencePersons($endpoint, $refUri) {
         
         SELECT DISTINCT ?g ?person ?label
         WHERE {
-            GRAPH <http://ontology.ipbes.net/graph/ias> { 
-
+            GRAPH <http://ontology.ipbes.net/graph/ias> {
                 <$refUri> ipbes:hasPerson ?person . 
                 OPTIONAL { ?person foaf:name|rdfs:label ?label }
             }
@@ -194,16 +193,17 @@ if (!$report && !$chapter && !$subchapter): ?>
     $query = "
         PREFIX ipbes: <http://ontology.ipbes.net/report>
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 
         SELECT ?g ?chapter ?label 
         WHERE {
             GRAPH <http://ontology.ipbes.net/graph/ias> { 
                 ?chapter a ipbes:Chapter ;
                 ipbes:Report <{$report}> . 
-                OPTIONAL { ?chapter rdfs:label ?label }
+                OPTIONAL { ?chapter rdfs:label|skos:prefLabel ?label }
             }
         } 
-        ORDER BY ?label         
+        ORDER BY ?chapter         
     ";
     $results = sparql_query($fuseki_endpoint, $query);
     ?>
@@ -228,15 +228,16 @@ if (!$report && !$chapter && !$subchapter): ?>
     $query = "
         PREFIX ipbes: <http://ontology.ipbes.net/report>
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 
         SELECT ?g ?subchapter ?label 
             WHERE { 
                 GRAPH <http://ontology.ipbes.net/graph/ias> {
                     ?subchapter a ipbes:SubChapter ; 
                     ipbes:Chapter <{$chapter}> . 
-                    OPTIONAL { ?subchapter rdfs:label ?label } 
+                    OPTIONAL { ?subchapter rdfs:label|skos:prefLabel ?label } 
                 }
-            } ORDER BY ?label
+            } ORDER BY ?subchapter
         ";
         $results = sparql_query($fuseki_endpoint, $query);
         ?>
