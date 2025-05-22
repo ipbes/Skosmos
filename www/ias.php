@@ -3,7 +3,7 @@ ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
 // SPARQL endpoint configuration
-$fuseki_endpoint = 'http://localhost:3030/ias/query';
+$fuseki_endpoint = 'http://localhost:3030/report/query';
 
 // Get URL parameters
 $report = $_GET['report'] ?? null;
@@ -37,15 +37,16 @@ function printLink($label, $params) {
  */
 function showResourceDetails($endpoint, $resourceUri) {
     $query = "
-        PREFIX ipbes: <http://ontology.ipbes.net/>
+        PREFIX ipbes: <http://ontology.ipbes.net/report>
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
         PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
         PREFIX dcterms: <http://purl.org/dc/terms/>
         
-        SELECT ?p ?o ?label WHERE { 
-            <$resourceUri> ?p ?o . 
-            OPTIONAL { 
-                ?o rdfs:label|skos:prefLabel|dcterms:title ?label
+        SELECT ?g ?p ?o ?label 
+            WHERE { 
+                GRAPH <http://ontology.ipbes.net/graph/ias> { 
+                <$resourceUri> ?p ?o . 
+                OPTIONAL { ?o rdfs:label|skos:prefLabel|dcterms:title ?label }
             }
         }
     ";
@@ -57,6 +58,11 @@ function showResourceDetails($endpoint, $resourceUri) {
         $prop = basename($row['p']['value']);
         $value = $row['o']['value'];
         $label = $row['label']['value'] ?? '';
+        
+         // Skip internal reference URIs (reportReference-style)
+        if (strpos($value, 'http://ontology.ipbes.net/report/ref/') === 0) {
+            continue;
+        }
         $displayValue = $label ? "$label ($value)" : $value;
         echo "<li><strong>$prop:</strong> $displayValue</li>";
     }
@@ -68,13 +74,18 @@ function showResourceDetails($endpoint, $resourceUri) {
  */
 function showReferencePersons($endpoint, $refUri) {
     $query = "
-        PREFIX ipbes: <http://ontology.ipbes.net/>
+        PREFIX ipbes: <http://ontology.ipbes.net/report>
         PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
         
-        SELECT ?person ?label WHERE {
-            <$refUri> ipbes:hasPerson ?person . 
-            OPTIONAL { 
-                ?person foaf:name|rdfs:label ?label
+        SELECT DISTINCT ?g ?person ?label
+        WHERE {
+            GRAPH <http://ontology.ipbes.net/graph/ias> { 
+
+                <$refUri> ipbes:hasPerson ?person . 
+                OPTIONAL { 
+                    ?person foaf:name|rdfs:label ?label
+                }
             }
         }
     ";
@@ -100,9 +111,9 @@ function showReferencePersons($endpoint, $refUri) {
     <style>
         body {
             font-family: Arial, sans-serif;
-            line-height: 1.6;
+            /* line-height: 1.6;
             margin: 20px;
-            max-width: 1200px;
+            max-width: 1200px;*/
         }
         h1 {
             color: #2c3e50;
@@ -147,19 +158,21 @@ function showReferencePersons($endpoint, $refUri) {
 <body>
 <h1>IPBES Report Navigator</h1>
 
-<?php if (!$report && !$chapter): ?>
-    <!-- List all reports.-->
-     <?php
+<?php 
+if (!$report && !$chapter && !$subchapter): ?>
+    <!-- List all reports. You can remove |skos:prefLabel in optional-->
+<?php
     $query = "
-        PREFIX ipbes: <http://ontology.ipbes.net/>
+        PREFIX ipbes: <http://ontology.ipbes.net/report>
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
         PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
 
-        SELECT DISTINCT ?report ?label WHERE {
+        SELECT DISTINCT ?g ?report ?label 
+        WHERE {
+            GRAPH <http://ontology.ipbes.net/graph/ias> { 
             ?report a ipbes:Report .
-            OPTIONAL { 
-                ?report rdfs:label|skos:prefLabel ?label
-                } 
+            OPTIONAL { ?report rdfs:label|skos:prefLabel ?label } 
+            }
             } ORDER BY ?label
         ";
     $results = sparql_query($fuseki_endpoint, $query);
@@ -173,27 +186,28 @@ function showReferencePersons($endpoint, $refUri) {
         <?php endforeach; ?>
     </ul>
 
-    <?php elseif ($report && !$chapter): ?>
+    <?php elseif ($report && !$chapter && !$subchapter): ?>
     <!-- Show report details and list chapters -->
     <h2>Report Details</h2>
     <?php showResourceDetails($fuseki_endpoint, $report); ?>
 
     <?php
     $query = "
-        PREFIX ipbes: <http://ontology.ipbes.net/>
+        PREFIX ipbes: <http://ontology.ipbes.net/report>
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-        
-        SELECT ?chapter ?label WHERE {
-        ?chapter a ipbes:Chapter ;
-        ipbes:hasReport <{$report}> . 
-        OPTIONAL {
-            ?chapter rdfs:label ?label
+
+        SELECT ?g ?chapter ?label 
+        WHERE {
+            GRAPH <http://ontology.ipbes.net/graph/ias> { 
+                ?chapter a ipbes:Chapter ;
+                ipbes:Report <{$report}> . 
+                OPTIONAL { ?chapter rdfs:label ?label }
             }
-        } ORDER BY ?label
+        } ORDER BY ?label         
     ";
     $results = sparql_query($fuseki_endpoint, $query);
     ?>
-    <h3>Subchapters</h3>
+    <h3>Chapters</h3>
     <ul>
         <?php foreach ($results['results']['bindings'] as $row): ?>
             <?php $label = $row['label']['value'] ?? basename($row['chapter']['value']); ?>
@@ -205,32 +219,81 @@ function showReferencePersons($endpoint, $refUri) {
     </ul>
     <a href="?" class="back-link">← Back to All Reports</a>
 
- <?php elseif ($chapter): ?>
-<!-- Show Chapter details and references -->
+ <?php elseif ($report && $chapter && !$subchapter): ?>
+<!-- Show chapter details and list subchapters -->
     <h2>Chapter Details</h2>
     <?php showResourceDetails($fuseki_endpoint, $chapter); ?>
 
     <?php
     $query = "
-        PREFIX ipbes: <http://ontology.ipbes.net/>
+        PREFIX ipbes: <http://ontology.ipbes.net/report>
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
 
-        SELECT ?ref ?doi ?label WHERE {
-            ?ref a ipbes:Reference ;
-            ipbes:hasReport <{$chapter}> .
-            OPTIONAL {
-                ?ref ipbes:hasDoi ?doi .
-                ?ref rdfs:label ?label
+        SELECT ?g ?subchapter ?label 
+            WHERE { 
+                GRAPH <http://ontology.ipbes.net/graph/ias> {
+                    ?subchapter a ipbes:SubChapter ; 
+                    ipbes:Chapter <{$chapter}> . 
+                    OPTIONAL { ?subchapter rdfs:label ?label } 
                 }
             } ORDER BY ?label
         ";
+        $results = sparql_query($fuseki_endpoint, $query);
+        ?>
+        
+        <h3>Subchapters</h3>
+        <ul>
+            <?php foreach ($results['results']['bindings'] as $row): ?>
+                <?php $label = $row['label']['value'] ?? basename($row['subchapter']['value']); ?>
+                <?php printLink($label, [
+                    'report' => $report, 
+                    'chapter' => $chapter,
+                    'subchapter' => $row['subchapter']['value']
+                ]); ?>
+            <?php endforeach; ?>
+        </ul>
+        
+        <a href="?report=<?= urlencode($report) ?>" class="back-link">← Back to Chapters</a>
+        
+    <?php elseif ($subchapter): ?>
+        <!-- Show subchapter details and references -->
+        <h2>Subchapter Details</h2>
+        <?php showResourceDetails($fuseki_endpoint, $subchapter); ?>
+        
+        <?php
+        $query = "
+            PREFIX ipbes: <http://ontology.ipbes.net/report>
+            PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+            PREFIX owl: <http://www.w3.org/2002/07/owl#>
+            
+            SELECT ?g ?ref ?doi ?label ?sameAs WHERE { 
+            GRAPH <http://ontology.ipbes.net/graph/ias> {
+                    ?ref a ipbes:Reference ; 
+                    ipbes:SubChapter <{$subchapter}> . 
+                    OPTIONAL { ?ref ipbes:hasDoi ?doi . }
+                    OPTIONAL { ?ref rdfs:label ?label . }
+                    OPTIONAL { ?ref owl:sameAs ?sameAs . }
+                    
+                } 
+            } ORDER BY ?label 
+        ";
     $results = sparql_query($fuseki_endpoint, $query);
     ?>
+
     <h3>References</h3>
     <ul>
         <?php foreach ($results['results']['bindings'] as $row): ?>
             <?php
-            $refLabel = $row['label']['value'] ?? basename($row['ref']['value']);
+            $sameAs = $row['sameAs']['value'] ?? null;
+
+                if ($sameAs) {
+                    $refLabel = "<a href=\"$sameAs\" target=\"_blank\">$sameAs</a>";
+                } elseif (!empty($row['label']['value'])) {
+                    $refLabel = $row['label']['value'];
+                } else {
+                    $refLabel = "<a href=\"{$row['ref']['value']}\" target=\"_blank\">{$row['ref']['value']}</a>";
+                }
+
             $doiUrl = isset($row['doi']) ? "https://doi.org/" . ltrim($row['doi']['value'], 'doi:') : '';
             $doiLink = $doiUrl ? " (<a href='$doiUrl' target='_blank'>DOI</a>)" : '';
             ?>
@@ -241,7 +304,7 @@ function showReferencePersons($endpoint, $refUri) {
             <?php endforeach; ?>
             </ul>
 
-            <a href="?report=<?= urlencode($report) ?>" class="back-link">← Back to Chapters</a>
+            <a href="?report=<?= urlencode($report) ?>&chapter=<?= urlencode($chapter) ?>" class="back-link">← Back to Subchapters</a>
             <?php endif; ?>
 </body>
 </html>

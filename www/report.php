@@ -42,8 +42,9 @@ function showResourceDetails($endpoint, $resourceUri) {
         PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
         PREFIX dcterms: <http://purl.org/dc/terms/>
         
-        SELECT ?g ?p ?o ?label WHERE { 
-          GRAPh ?g {  
+        SELECT ?g ?p ?o ?label 
+        WHERE { 
+          GRAPH ?g {  
             <$resourceUri> ?p ?o . 
             OPTIONAL { ?o rdfs:label|skos:prefLabel|dcterms:title ?label } 
             }
@@ -57,6 +58,11 @@ function showResourceDetails($endpoint, $resourceUri) {
         $prop = basename($row['p']['value']);
         $value = $row['o']['value'];
         $label = $row['label']['value'] ?? '';
+
+        // Skip internal reference URIs (reportReference-style)
+        if (strpos($value, 'http://ontology.ipbes.net/report/ref/') === 0) {
+            continue;
+        }
         $displayValue = $label ? "$label ($value)" : $value;
         echo "<li><strong>$prop:</strong> $displayValue</li>";
     }
@@ -70,11 +76,16 @@ function showReferencePersons($endpoint, $refUri) {
     $query = "
         PREFIX ipbes: <http://ontology.ipbes.net/report>
         PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
         
-        SELECT ?g ?person ?label WHERE { 
-        GRAPH ?g {
-            <$refUri> foaf:Person ?person . 
-            OPTIONAL { ?person foaf:name|rdfs:label ?label } 
+        SELECT DISTINCT ?g ?person ?label 
+        WHERE { 
+            GRAPH <http://ontology.ipbes.net/graph/ias> { 
+
+                <$refUri> ipbes:hasPerson ?person . 
+                OPTIONAL { 
+                    ?person foaf:name|rdfs:label ?label
+                }
             }
         }
     ";
@@ -147,7 +158,8 @@ function showReferencePersons($endpoint, $refUri) {
 <body>
     <h1>IPBES Report Navigator</h1>
     
-    <?php if (!$report && !$chapter && !$subchapter): ?>
+    <?php 
+    if (!$report && !$chapter && !$subchapter): ?>
         <!-- List all reports. You can remove |skos:prefLabel in optional-->
         <?php
         $query = "
@@ -155,7 +167,8 @@ function showReferencePersons($endpoint, $refUri) {
             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
             PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
             
-            SELECT DISTINCT ?g ?report ?label WHERE {
+            SELECT DISTINCT ?g ?report ?label 
+            WHERE {
                 GRAPH ?g { 
                     ?report a ipbes:Report . 
                     OPTIONAL { ?report rdfs:label|skos:prefLabel ?label }
@@ -183,7 +196,8 @@ function showReferencePersons($endpoint, $refUri) {
             PREFIX ipbes: <http://ontology.ipbes.net/report>
             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
             
-            SELECT ?g ?chapter ?label WHERE { 
+            SELECT ?g ?chapter ?label 
+            WHERE { 
                 GRAPH ?g {
                     ?chapter a ipbes:Chapter ; 
                     ipbes:Report <{$report}> . 
@@ -217,7 +231,8 @@ function showReferencePersons($endpoint, $refUri) {
             PREFIX ipbes: <http://ontology.ipbes.net/report>
             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
             
-            SELECT ?g ?subchapter ?label WHERE { 
+            SELECT ?g ?subchapter ?label 
+            WHERE { 
                 GRAPH ?g {
                     ?subchapter a ipbes:SubChapter ; 
                     ipbes:Chapter <{$chapter}> . 
@@ -251,17 +266,18 @@ function showReferencePersons($endpoint, $refUri) {
         $query = "
             PREFIX ipbes: <http://ontology.ipbes.net/report>
             PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+            PREFIX owl: <http://www.w3.org/2002/07/owl#>
             
-            SELECT ?ref ?doi ?label WHERE { 
+            SELECT ?g ?ref ?doi ?label ?sameAs WHERE { 
             GRAPH ?g {
                     ?ref a ipbes:Reference ; 
-                    ipbes:hasReport <{$subchapter}> . 
-                    OPTIONAL { 
-                        ?ref ipbes:hasDoi ?doi . 
-                        ?ref rdfs:label ?label 
-                    }
+                    ipbes:SubChapter <{$subchapter}> . 
+                    OPTIONAL { ?ref ipbes:hasDoi ?doi . }
+                    OPTIONAL { ?ref rdfs:label ?label . }
+                    OPTIONAL { ?ref owl:sameAs ?sameAs . }
+                    
                 } 
-            } ORDER BY ?label
+            } ORDER BY ?label 
         ";
         $results = sparql_query($fuseki_endpoint, $query);
         ?>
@@ -270,7 +286,16 @@ function showReferencePersons($endpoint, $refUri) {
         <ul>
             <?php foreach ($results['results']['bindings'] as $row): ?>
                 <?php
-                $refLabel = $row['label']['value'] ?? basename($row['ref']['value']);
+                $sameAs = $row['sameAs']['value'] ?? null;
+
+                if ($sameAs) {
+                    $refLabel = "<a href=\"$sameAs\" target=\"_blank\">$sameAs</a>";
+                } elseif (!empty($row['label']['value'])) {
+                    $refLabel = $row['label']['value'];
+                } else {
+                    $refLabel = "<a href=\"{$row['ref']['value']}\" target=\"_blank\">{$row['ref']['value']}</a>";
+                }
+
                 $doiUrl = isset($row['doi']) ? "https://doi.org/" . ltrim($row['doi']['value'], 'doi:') : '';
                 $doiLink = $doiUrl ? " (<a href='$doiUrl' target='_blank'>DOI</a>)" : '';
                 ?>

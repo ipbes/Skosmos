@@ -3,10 +3,11 @@ ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
 // SPARQL endpoint for Fuseki
-$fuseki_endpoint = 'http://localhost:3030/ga1/query';
+$fuseki_endpoint = 'http://localhost:3030/report/query';
 
-// Get parameters
+// Get URL parameters
 $report = $_GET['report'] ?? null;
+$chapter = $_GET['chapter'] ?? null;
 $subchapter = $_GET['subchapter'] ?? null;
 
 // Run SPARQL query
@@ -27,7 +28,17 @@ function printLink($label, $params) {
 }
 
 function showResourceDetails($endpoint, $resourceUri) {
-    $query = "PREFIX ipbes: <http://ontology.ipbes.net/>\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\nSELECT ?p ?o ?label WHERE { <$resourceUri> ?p ?o . OPTIONAL { ?o rdfs:label ?label } }";
+    $query = "
+        PREFIX ipbes: <http://ontology.ipbes.net/report>
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+            SELECT ?g ?p ?o ?label 
+                WHERE { 
+                    GRAPH <http://ontology.ipbes.net/graph/ga1> { 
+                        <$resourceUri> ?p ?o . 
+                        OPTIONAL { ?o rdfs:label ?label } 
+                    }
+                }
+            ";
     $results = sparql_query($endpoint, $query);
     echo "<ul>";
     foreach ($results['results']['bindings'] as $row) {
@@ -41,7 +52,17 @@ function showResourceDetails($endpoint, $resourceUri) {
 }
 
 function showReferencePersons($endpoint, $refUri) {
-    $query = "PREFIX ipbes: <http://ontology.ipbes.net/>\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\nSELECT ?person ?label WHERE { <$refUri> ipbes:hasPerson ?person . OPTIONAL { ?person rdfs:label ?label } }";
+    $query = "
+    PREFIX ipbes: <http://ontology.ipbes.net/report>
+    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        SELECT ?g ?person ?label 
+            WHERE { 
+                GRAPH <http://ontology.ipbes.net/graph/ga1> { 
+                    <$refUri> ipbes:hasPerson ?person . 
+                    OPTIONAL { ?person rdfs:label ?label } 
+                }
+            }
+    ";
     $results = sparql_query($endpoint, $query);
     if (!empty($results['results']['bindings'])) {
         echo "<ul>";
@@ -52,7 +73,9 @@ function showReferencePersons($endpoint, $refUri) {
         echo "</ul>";
     }
 }
-?><!DOCTYPE html>
+?>
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -68,8 +91,19 @@ function showReferencePersons($endpoint, $refUri) {
 <body>
 <h1>IPBES Report Navigator</h1>
 <?php
-if (!$report && !$subchapter) {
-    $query = "PREFIX ipbes: <http://ontology.ipbes.net/>\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\nSELECT DISTINCT ?report ?label WHERE { ?report a ipbes:Report . OPTIONAL { ?report rdfs:label ?label } } ORDER BY ?label";
+if (!$report && !$chapter) {
+    $query = "
+    PREFIX ipbes: <http://ontology.ipbes.net/report>
+    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+    SELECT DISTINCT ?g ?report ?label 
+        WHERE { 
+            GRAPH <http://ontology.ipbes.net/graph/ga1> { 
+                ?report a ipbes:Report . 
+                OPTIONAL { ?report rdfs:label ?label } 
+            }
+        }
+        ORDER BY ?label
+        ";
     $results = sparql_query($fuseki_endpoint, $query);
     echo "<h2>Available Reports</h2><ul>";
     foreach ($results['results']['bindings'] as $row) {
@@ -81,7 +115,18 @@ if (!$report && !$subchapter) {
     echo "<h2>Report Details</h2>";
     showResourceDetails($fuseki_endpoint, $report);
 
-    $query = "PREFIX ipbes: <http://ontology.ipbes.net/>\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\nSELECT ?subchapter ?label WHERE { ?subchapter a ipbes:SubChapter ; ipbes:hasReport <{$report}> . OPTIONAL { ?subchapter rdfs:label ?label } } ORDER BY ?label";
+    $query = "
+        PREFIX ipbes: <http://ontology.ipbes.net/report>
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        SELECT ?g ?subchapter ?label 
+        WHERE { 
+            GRAPH <http://ontology.ipbes.net/graph/ga1> { 
+                ?subchapter a ipbes:SubChapter ; ipbes:hasReport <{$report}> . 
+                OPTIONAL { ?subchapter rdfs:label ?label } 
+            }
+        } 
+        ORDER BY ?label
+        ";
     $results = sparql_query($fuseki_endpoint, $query);
     echo "<h3>Subchapters</h3><ul>";
     foreach ($results['results']['bindings'] as $row) {
@@ -93,7 +138,19 @@ if (!$report && !$subchapter) {
     echo "<h2>Subchapter Details</h2>";
     showResourceDetails($fuseki_endpoint, $subchapter);
 
-    $query = "PREFIX ipbes: <http://ontology.ipbes.net/>\nPREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>\nSELECT ?ref ?doi ?label WHERE { ?ref a ipbes:Reference ; ipbes:hasReport <{$subchapter}> . OPTIONAL { ?ref ipbes:hasDoi ?doi . ?ref rdfs:label ?label } } ORDER BY ?label";
+    $query = "
+        PREFIX ipbes: <http://ontology.ipbes.net/report>
+        PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+        SELECT ?g ?ref ?doi ?label 
+        WHERE { 
+            GRAPH <http://ontology.ipbes.net/graph/ga1> { 
+                ?ref a ipbes:Reference ; ipbes:hasReport <{$subchapter}> . 
+                OPTIONAL { ?ref ipbes:hasDoi ?doi . ?ref rdfs:label ?label } 
+                }
+        } 
+        ORDER BY ?label
+        ";
+        
     $results = sparql_query($fuseki_endpoint, $query);
     echo "<h3>References</h3><ul>";
     foreach ($results['results']['bindings'] as $row) {
