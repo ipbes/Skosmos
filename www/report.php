@@ -6,9 +6,11 @@ error_reporting(E_ALL);
 $fuseki_endpoint = 'http://localhost:3030/report/query';
 
 // Get URL parameters
-$report = $_GET['report'] ?? null;
-$chapter = $_GET['chapter'] ?? null;
-$subchapter = $_GET['subchapter'] ?? null;
+$report = isset($_GET['report']) ? urldecode($_GET['report']) : null;
+$chapter = isset($_GET['chapter']) ? urldecode($_GET['chapter']) : null;
+$subchapter = isset($_GET['subchapter']) ? urldecode($_GET['subchapter']) : null;
+$person = isset($_GET['person']) ? rawurldecode($_GET['person']) : null;
+
 
 /**
  * Execute SPARQL query against endpoint
@@ -46,8 +48,8 @@ function showResourceDetails($endpoint, $resourceUri) {
         WHERE { 
           GRAPH ?g {  
             <$resourceUri> ?p ?o . 
-            OPTIONAL { ?o rdfs:label|skos:prefLabel|dcterms:title ?label } 
-            }
+            OPTIONAL { ?o rdfs:label|skos:prefLabel|dcterms:title ?label }
+          }
         }
     ";
     
@@ -63,7 +65,18 @@ function showResourceDetails($endpoint, $resourceUri) {
         if (strpos($value, 'http://ontology.ipbes.net/report/ref/') === 0) {
             continue;
         }
-        $displayValue = $label ? "$label ($value)" : $value;
+
+        // Make the value clickable if it's a person URI
+        if (filter_var($value, FILTER_VALIDATE_URL)) {
+            if (strpos($value, '/person/') !== false) {
+                $displayText = $label ?: basename($value);
+                $displayValue = "<a href='?person=" . urlencode($value) . "'>$displayText</a> ($value)";
+            } else {
+                $displayValue = $label ? "$label ($value)" : $value;
+            }
+        } else {
+            $displayValue = $label ? "$label ($value)" : $value;
+        }
         echo "<li><strong>$prop:</strong> $displayValue</li>";
     }
     echo "</ul>";
@@ -81,19 +94,21 @@ function showReferencePersons($endpoint, $refUri) {
         SELECT DISTINCT ?g ?person ?label 
         WHERE { 
             GRAPH ?g {
-                <$refUri> ipbes:hasPerson ?person . 
+                <{$refUri}> ipbes:hasPerson ?person . 
                 OPTIONAL { ?person foaf:name|rdfs:label ?label }
             }
         }
     ";
     
     $results = sparql_query($endpoint, $query);
-    
+
     if (!empty($results['results']['bindings'])) {
         echo "<ul>";
         foreach ($results['results']['bindings'] as $row) {
             $personLabel = $row['label']['value'] ?? basename($row['person']['value']);
-            echo "<li>$personLabel</li>";
+            $personUri = $row['person']['value'];
+            $encodedUri = htmlspecialchars($personUri, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+            $queryParam = rawurlencode($personUri);
         }
         echo "</ul>";
     }
@@ -108,9 +123,6 @@ function showReferencePersons($endpoint, $refUri) {
     <style>
         body {
             font-family: Arial, sans-serif;
-            /* line-height: 1.6;
-            margin: 20px; 
-            max-width: 1200px;*/
         }
         h1 {
             color: #2c3e50;
@@ -155,8 +167,12 @@ function showReferencePersons($endpoint, $refUri) {
 <body>
     <h1>IPBES Report Navigator</h1>
     
-    <?php 
-    if (!$report && !$chapter && !$subchapter): ?>
+    <?php if ($person): ?>
+        <h2>Person Details</h2>
+        <?php showResourceDetails($fuseki_endpoint, $person); ?>
+            <a href="javascript:history.back()" class="back-link">← Back</a>
+    <?php elseif (!$report && !$chapter && !$subchapter ): ?>
+        
         <!-- List all reports. You can remove |skos:prefLabel in optional-->
         <?php
         $query = "
