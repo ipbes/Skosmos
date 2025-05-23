@@ -66,11 +66,13 @@ function showResourceDetails($endpoint, $resourceUri) {
             continue;
         }
 
-        // Make the value clickable if it's a person URI
+        // Handle person URIs
         if (filter_var($value, FILTER_VALIDATE_URL)) {
             if (strpos($value, '/person/') !== false) {
                 $displayText = $label ?: basename($value);
-                $displayValue = "<a href='?person=" . urlencode($value) . "'>$displayText</a> ($value)";
+                $encodedUri = rawurlencode($value);
+                // Make URI clickable
+                $displayValue = "$displayText (<a href='?person=$encodedUri'>$value</a>)";
             } else {
                 $displayValue = $label ? "$label ($value)" : $value;
             }
@@ -107,8 +109,9 @@ function showReferencePersons($endpoint, $refUri) {
         foreach ($results['results']['bindings'] as $row) {
             $personLabel = $row['label']['value'] ?? basename($row['person']['value']);
             $personUri = $row['person']['value'];
-            $encodedUri = htmlspecialchars($personUri, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-            $queryParam = rawurlencode($personUri);
+            $encodedUri = rawurlencode($personUri);
+            // Make the URI clickable
+            echo "<li>$personLabel (<a href='?person=$encodedUri'>$personUri</a>)</li>";
         }
         echo "</ul>";
     }
